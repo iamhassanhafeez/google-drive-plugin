@@ -316,7 +316,8 @@ class Drive_API extends Base {
 		}
 
 		$files = $request->get_file_params();
-		
+		$parent_id = $request->get_param( 'parent_id' ); // <-- Added
+
 		if ( empty( $files['file'] ) ) {
 			return new WP_Error( 'no_file', 'No file provided', array( 'status' => 400 ) );
 		}
@@ -331,6 +332,9 @@ class Drive_API extends Base {
 			// Create file metadata
 			$drive_file = new Google_Service_Drive_DriveFile();
 			$drive_file->setName( $file['name'] );
+			if ( !empty( $parent_id ) ) {
+				$drive_file->setParents( array( $parent_id ) ); // <-- Added
+			}
 
 			// Upload file
 			$result = $this->drive_service->files->create(
@@ -354,7 +358,7 @@ class Drive_API extends Base {
 				),
 			) );
 
-		} catch ( Exception $e ) {
+		} catch ( \Exception $e ) {
 			return new WP_Error( 'upload_failed', $e->getMessage(), array( 'status' => 500 ) );
 		}
 	}
@@ -408,6 +412,7 @@ class Drive_API extends Base {
 		}
 
 		$name = $request->get_param( 'name' );
+		$parent_id = $request->get_param( 'parent_id' ); // <-- Added
 		
 		if ( empty( $name ) ) {
 			return new WP_Error( 'missing_name', 'Folder name is required', array( 'status' => 400 ) );
@@ -417,6 +422,9 @@ class Drive_API extends Base {
 			$folder = new Google_Service_Drive_DriveFile();
 			$folder->setName( sanitize_text_field( $name ) );
 			$folder->setMimeType( 'application/vnd.google-apps.folder' );
+			if ( !empty( $parent_id ) ) {
+				$folder->setParents( array( $parent_id ) ); // <-- Added
+			}
 
 			$result = $this->drive_service->files->create( $folder, array(
 				'fields' => 'id,name,mimeType,webViewLink',
@@ -432,7 +440,7 @@ class Drive_API extends Base {
 				),
 			) );
 
-		} catch ( Exception $e ) {
+		} catch ( \Exception $e ) {
 			return new WP_Error( 'create_failed', $e->getMessage(), array( 'status' => 500 ) );
 		}
 	}

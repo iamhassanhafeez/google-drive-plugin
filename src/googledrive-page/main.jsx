@@ -28,6 +28,7 @@ const WPMUDEV_DriveTest = () => {
   const [files, setFiles] = useState([]);
   const [uploadFile, setUploadFile] = useState(null);
   const [folderName, setFolderName] = useState("");
+  const [parentId, setParentId] = useState(""); // <-- NEW STATE
   const [notice, setNotice] = useState({ message: "", type: "" });
   const [credentials, setCredentials] = useState({
     clientId: "",
@@ -124,6 +125,9 @@ const WPMUDEV_DriveTest = () => {
     setIsLoading(true);
     const formData = new FormData();
     formData.append("file", uploadFile);
+    if (parentId) {
+      formData.append("parent_id", parentId);
+    }
 
     try {
       const response = await fetch("/wp-json/wpmudev/v1/drive/upload", {
@@ -190,7 +194,7 @@ const WPMUDEV_DriveTest = () => {
       const response = await fetch("/wp-json/wpmudev/v1/drive/create-folder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: folderName }),
+        body: JSON.stringify({ name: folderName, parent_id: parentId }),
       });
 
       const data = await response.json();
@@ -216,6 +220,11 @@ const WPMUDEV_DriveTest = () => {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
+
+  // Filter folders for parent selection
+  const folderOptions = files.filter(
+    (f) => f.mimeType === "application/vnd.google-apps.folder"
+  );
 
   return (
     <>
@@ -364,6 +373,22 @@ const WPMUDEV_DriveTest = () => {
             </div>
             <div className="sui-box-body">
               <div className="sui-box-settings-row">
+                <label htmlFor="parent-folder-select">
+                  <strong>Parent Folder (optional):</strong>
+                </label>
+                <select
+                  id="parent-folder-select"
+                  value={parentId}
+                  onChange={(e) => setParentId(e.target.value)}
+                  style={{ marginBottom: "10px" }}
+                >
+                  <option value="">Root</option>
+                  {folderOptions.map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </option>
+                  ))}
+                </select>
                 <input
                   type="file"
                   onChange={(e) => setUploadFile(e.target.files[0])}
@@ -397,6 +422,22 @@ const WPMUDEV_DriveTest = () => {
             </div>
             <div className="sui-box-body">
               <div className="sui-box-settings-row">
+                <label htmlFor="parent-folder-select-folder">
+                  <strong>Parent Folder (optional):</strong>
+                </label>
+                <select
+                  id="parent-folder-select-folder"
+                  value={parentId}
+                  onChange={(e) => setParentId(e.target.value)}
+                  style={{ marginBottom: "10px" }}
+                >
+                  <option value="">Root</option>
+                  {folderOptions.map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </option>
+                  ))}
+                </select>
                 <TextControl
                   label="Folder Name"
                   value={folderName}

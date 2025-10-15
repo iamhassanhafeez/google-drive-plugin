@@ -34,7 +34,13 @@ const WPMUDEV_DriveTest = () => {
     clientSecret: "",
   });
 
-  useEffect(() => {}, [isAuthenticated]);
+  // Load files when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadFiles();
+    }
+    // eslint-disable-next-line
+  }, [isAuthenticated]);
 
   const showNotice = (message, type = "success") => {
     setNotice({ message, type });
@@ -46,17 +52,168 @@ const WPMUDEV_DriveTest = () => {
       showNotice("Please enter both Client ID and Client Secret", "error");
       return;
     }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        "/wp-json/wpmudev/v1/drive/save-credentials",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            client_id: credentials.clientId,
+            client_secret: credentials.clientSecret,
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to save credentials");
+      setHasCredentials(true);
+      setShowCredentials(false);
+      showNotice("Credentials saved successfully!");
+    } catch (error) {
+      showNotice(error.message, "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAuth = async () => {};
+  const handleAuth = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/wp-json/wpmudev/v1/drive/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await response.json();
+      if (data.auth_url) {
+        window.location.href = data.auth_url;
+      } else {
+        showNotice("Authorization URL not received.", "error");
+      }
+    } catch (err) {
+      showNotice("Failed to start authentication.", "error");
+      console.error(err);
+    }
+  };
 
-  const loadFiles = async () => {};
+  const loadFiles = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/wp-json/wpmudev/v1/drive/files");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to load files");
+      setFiles(data.files || []);
+      showNotice("Files loaded successfully!");
+    } catch (error) {
+      setFiles([]);
+      showNotice(error.message, "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const handleUpload = async () => {};
+  const handleUpload = async () => {
+    if (!uploadFile) {
+      showNotice("Please select a file to upload", "error");
+      return;
+    }
 
-  const handleDownload = async (fileId, fileName) => {};
+    setIsLoading(true);
+    const formData = new FormData();
+    formData.append("file", uploadFile);
 
-  const handleCreateFolder = async () => {};
+    try {
+      const response = await fetch("/wp-json/wpmudev/v1/drive/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Upload failed");
+
+      showNotice(`Uploaded: ${data.file.name}`);
+      setUploadFile(null);
+      loadFiles(); // Refresh list
+    } catch (error) {
+      showNotice(error.message, "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownload = async (fileId, fileName, mimeType) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `/wp-json/wpmudev/v1/drive/download?file_id=${fileId}`
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Download failed");
+
+      // Convert base64 to blob and trigger download
+      const byteCharacters = atob(data.content);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: mimeType || data.mimeType });
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      showNotice(`Downloaded: ${fileName}`);
+    } catch (error) {
+      showNotice(error.message, "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    if (!folderName) {
+      showNotice("Folder name is required", "error");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/wp-json/wpmudev/v1/drive/create-folder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: folderName }),
+      });
+
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.message || "Failed to create folder");
+
+      showNotice(`Folder created: ${data.folder.name}`);
+      setFolderName("");
+      loadFiles();
+    } catch (error) {
+      showNotice(error.message, "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Optionally, reload page after authentication callback
+  useEffect(() => {
+    // If redirected after OAuth, reload to update auth status
+    if (window.location.search.includes("auth=success")) {
+      setIsAuthenticated(true);
+      loadFiles();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   return (
     <>
@@ -296,12 +453,21 @@ const WPMUDEV_DriveTest = () => {
                           <Button
                             variant="link"
                             size="small"
-                            href=""
+                            href={file.webViewLink}
                             target="_blank"
                           >
                             View in Drive
                           </Button>
                         )}
+                        <Button
+                          variant="secondary"
+                          size="small"
+                          onClick={() =>
+                            handleDownload(file.id, file.name, file.mimeType)
+                          }
+                        >
+                          Download
+                        </Button>
                       </div>
                     </div>
                   ))}

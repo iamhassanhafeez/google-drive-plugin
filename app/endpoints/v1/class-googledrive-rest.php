@@ -108,7 +108,6 @@ class Drive_API extends Base {
 		register_rest_route( 'wpmudev/v1/drive', '/auth', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'start_auth' ),
-			'permission_callback' => [ $this, 'check_permissions' ],
 		) );
 
 		// OAuth callback

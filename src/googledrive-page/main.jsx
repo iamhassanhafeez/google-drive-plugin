@@ -37,6 +37,8 @@ const WPMUDEV_DriveTest = () => {
   // Load files when authenticated
   useEffect(() => {
     if (isAuthenticated) {
+      setShowCredentials(false);
+      showNotice("Google Drive successfully connected.");
       loadFiles();
     }
     // eslint-disable-next-line

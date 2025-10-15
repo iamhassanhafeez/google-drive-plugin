@@ -207,17 +207,15 @@ class Drive_API extends Base {
         try {
             // Exchange code for access token
             $access_token = $this->client->fetchAccessTokenWithAuthCode( $code );
-
-            if ( isset( $access_token['error'] ) ) {
-                throw new \Exception( $access_token['error_description'] ?? 'Unknown error' );
+            if ( isset( $access_token['expires_in'] ) ) {
+                $expires_at = time() + $access_token['expires_in'];
+                update_option( 'wpmudev_drive_token_expires', $expires_at );
             }
-
-            // Store tokens
             update_option( 'wpmudev_drive_access_token', $access_token );
+
             if ( isset( $access_token['refresh_token'] ) ) {
                 update_option( 'wpmudev_drive_refresh_token', $access_token['refresh_token'] );
             }
-            update_option( 'wpmudev_drive_token_expires', $access_token['expires_in'] ?? '' );
 
             // Redirect back to admin page
             wp_redirect( admin_url( 'admin.php?page=wpmudev_plugintest_drive&auth=success' ) );
@@ -253,8 +251,10 @@ class Drive_API extends Base {
 
                 $this->client->setAccessToken( $new_token );
                 update_option( 'wpmudev_drive_access_token', $new_token );
-                update_option( 'wpmudev_drive_token_expires', $new_token['expires_in'] ?? '' );
-                
+                if ( isset( $new_token['expires_in'] ) ) {
+                    $expires_at = time() + $new_token['expires_in'];
+                    update_option( 'wpmudev_drive_token_expires', $expires_at );
+                }
                 return true;
             } catch ( \Exception $e ) {
                 return false;
@@ -435,5 +435,11 @@ class Drive_API extends Base {
 		} catch ( Exception $e ) {
 			return new WP_Error( 'create_failed', $e->getMessage(), array( 'status' => 500 ) );
 		}
+	}
+
+	private function get_auth_status() {
+		$access_token = get_option( 'wpmudev_drive_access_token', '' );
+		$expires_at   = get_option( 'wpmudev_drive_token_expires', 0 );
+		return ! empty( $access_token ) && time() < $expires_at;
 	}
 }

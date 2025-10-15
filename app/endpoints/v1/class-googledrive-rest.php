@@ -108,6 +108,7 @@ class Drive_API extends Base {
 		register_rest_route( 'wpmudev/v1/drive', '/auth', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'start_auth' ),
+			'permission_callback' => [ $this, 'check_permissions' ],
 		) );
 
 		// OAuth callback
@@ -141,12 +142,25 @@ class Drive_API extends Base {
 		) );
 	}
 
+
+
+    /**
+     * Check permissions.
+     */
+    public function check_permissions() {
+        return current_user_can( 'manage_options' );
+    }
+
 	/**
 	 * Save Google OAuth credentials.
 	 */
-	public function save_credentials() {
-		$client_id     = '';
-		$client_secret = '';
+	public function save_credentials(WP_REST_Request $request) {
+		$client_id     = sanitize_text_field( $request->get_param( 'client_id' ) );
+		$client_secret = sanitize_text_field( $request->get_param( 'client_secret' ) );
+
+		if ( empty( $client_id ) || empty( $client_secret ) ) {
+			return new WP_Error( 'missing_params', 'Client ID and Secret are required', array( 'status' => 400 ) );
+		}
 
 
 		// Save credentials
@@ -160,125 +174,139 @@ class Drive_API extends Base {
 		// Reinitialize Google Client with new credentials
 		$this->setup_google_client();
 
-		return true;
+		return new WP_REST_Response( array(
+		'success' => true,
+		'message' => 'Credentials saved successfully.',
+	) );
 	}
 
-	/**
-	 * Start Google OAuth flow.
-	 */
-	public function start_auth() {
-		if ( ! $this->client ) {
-			return new WP_Error( 'missing_credentials', 'Google OAuth credentials not configured', array( 'status' => 400 ) );
-		}
+    /**
+     * Start Google OAuth flow.
+     */
+    public function start_auth( WP_REST_Request $request ) {
+        if ( ! $this->client ) {
+            return new WP_Error( 'missing_credentials', 'Google OAuth credentials not configured', array( 'status' => 400 ) );
+        }
 
-		return true;
-	}
+        $auth_url = $this->client->createAuthUrl();
+        return new WP_REST_Response( array(
+            'auth_url' => $auth_url,
+        ) );
+    }
 
-	/**
-	 * Handle OAuth callback.
-	 */
-	public function handle_callback() {
-		$code  = '';
-		$state = '';
+    /**
+     * Handle OAuth callback.
+     */
+    public function handle_callback( WP_REST_Request $request ) {
+        $code  = $request->get_param( 'code' );
+        $state = $request->get_param( 'state' );
 
-		if ( empty( $code ) ) {
-			wp_die( 'Authorization code not received' );
-		}
+        if ( empty( $code ) ) {
+            wp_die( 'Authorization code not received' );
+        }
 
-		try {
-			// Exchange code for access token
-			$access_token = array();
+        try {
+            // Exchange code for access token
+            $access_token = $this->client->fetchAccessTokenWithAuthCode( $code );
 
-			// Store tokens
-			update_option( 'wpmudev_drive_access_token', $access_token );
-			if ( isset( $access_token['refresh_token'] ) ) {
-				update_option( 'wpmudev_drive_refresh_token', $access_token );
-			}
-			update_option( 'wpmudev_drive_token_expires', '???' );
+            if ( isset( $access_token['error'] ) ) {
+                throw new \Exception( $access_token['error_description'] ?? 'Unknown error' );
+            }
 
-			// Redirect back to admin page
-			wp_redirect( admin_url( 'admin.php?page=wpmudev_plugintest_drive&auth=success' ) );
-			exit;
+            // Store tokens
+            update_option( 'wpmudev_drive_access_token', $access_token );
+            if ( isset( $access_token['refresh_token'] ) ) {
+                update_option( 'wpmudev_drive_refresh_token', $access_token['refresh_token'] );
+            }
+            update_option( 'wpmudev_drive_token_expires', $access_token['expires_in'] ?? '' );
 
-		} catch ( Exception $e ) {
-			wp_die( 'Failed to get access token: ' . esc_html( $e->getMessage() ) );
-		}
-	}
+            // Redirect back to admin page
+            wp_redirect( admin_url( 'admin.php?page=wpmudev_plugintest_drive&auth=success' ) );
+            exit;
 
-	/**
-	 * Ensure we have a valid access token.
-	 */
-	private function ensure_valid_token() {
-		if ( ! $this->client ) {
-			return false;
-		}
+        } catch ( \Exception $e ) {
+            wp_die( 'Failed to get access token: ' . esc_html( $e->getMessage() ) );
+        }
+    }
 
-		// Check if token is expired and refresh if needed
-		if ( $this->client->isAccessTokenExpired() ) {
-			$refresh_token = get_option( 'wpmudev_drive_refresh_token' );
-			
-			if ( empty( $refresh_token ) ) {
-				return false;
-			}
+    /**
+     * Ensure we have a valid access token.
+     */
+    private function ensure_valid_token() {
+        if ( ! $this->client ) {
+            return false;
+        }
 
-			try {
-				$new_token = $this->client->fetchAccessTokenWithRefreshToken( $refresh_token );
-				
-				if ( array_key_exists( 'error', $new_token ) ) {
-					return false;
-				}
+        // Check if token is expired and refresh if needed
+        if ( $this->client->isAccessTokenExpired() ) {
+            $refresh_token = get_option( 'wpmudev_drive_refresh_token' );
+            
+            if ( empty( $refresh_token ) ) {
+                return false;
+            }
 
-				update_option( 'wpmudev_drive_access_token', 'NEW TOKEN' );
-				update_option( 'wpmudev_drive_token_expires', 'NEW EXPIRATION TIME' );
-				
-				return true;
-			} catch ( Exception $e ) {
-				return false;
-			}
-		}
+            try {
+                $new_token = $this->client->fetchAccessTokenWithRefreshToken( $refresh_token );
+                
+                if ( array_key_exists( 'error', $new_token ) ) {
+                    return false;
+                }
 
-		return true;
-	}
+                $this->client->setAccessToken( $new_token );
+                update_option( 'wpmudev_drive_access_token', $new_token );
+                update_option( 'wpmudev_drive_token_expires', $new_token['expires_in'] ?? '' );
+                
+                return true;
+            } catch ( \Exception $e ) {
+                return false;
+            }
+        }
 
-	/**
-	 * List files in Google Drive.
-	 */
-	public function list_files() {
-		if ( ! $this->ensure_valid_token() ) {
-			return new WP_Error( 'no_access_token', 'Not authenticated with Google Drive', array( 'status' => 401 ) );
-		}
+        return true;
+    }
 
-		try {
-			$page_size = 20; // This should be an input parameter not static value 20.
-			$query     = 'trashed=false'; // This should be an input parameter not static value.
+    /**
+     * List files in Google Drive.
+     */
+    public function list_files( WP_REST_Request $request ) {
+        if ( ! $this->ensure_valid_token() ) {
+            return new WP_Error( 'no_access_token', 'Not authenticated with Google Drive', array( 'status' => 401 ) );
+        }
 
-			$options = array(
-				'pageSize' => $page_size,
-				'q'        => $query,
-				'fields'   => 'files(id,name,mimeType,size,modifiedTime,webViewLink)',
-			);
+        try {
+            $page_size = intval( $request->get_param( 'page_size' ) ) ?: 20;
+            $query     = $request->get_param( 'q' ) ?: 'trashed=false';
 
-			$results = $this->drive_service->files->listFiles( $options );
-			$files   = $results->getFiles();
+            $options = array(
+                'pageSize' => $page_size,
+                'q'        => $query,
+                'fields'   => 'files(id,name,mimeType,size,modifiedTime,webViewLink)',
+            );
 
-			$file_list = array();
-			foreach ( $files as $file ) {
-				$file_list[] = array(
-					'id'           => $file->getId(),
-					'name'         => $file->getName(),
-					'mimeType'     => $file->getMimeType(),
-					'size'         => $file->getSize(),
-					'modifiedTime' => $file->getModifiedTime(),
-					'webViewLink'  => $file->getWebViewLink(),
-				);
-			}
+            $results = $this->drive_service->files->listFiles( $options );
+            $files   = $results->getFiles();
 
-			return true;
+            $file_list = array();
+            foreach ( $files as $file ) {
+                $file_list[] = array(
+                    'id'           => $file->getId(),
+                    'name'         => $file->getName(),
+                    'mimeType'     => $file->getMimeType(),
+                    'size'         => $file->getSize(),
+                    'modifiedTime' => $file->getModifiedTime(),
+                    'webViewLink'  => $file->getWebViewLink(),
+                );
+            }
 
-		} catch ( Exception $e ) {
-			return new WP_Error( 'api_error', $e->getMessage(), array( 'status' => 500 ) );
-		}
-	}
+            return new WP_REST_Response( array(
+                'success' => true,
+                'files'   => $file_list,
+            ) );
+
+        } catch ( \Exception $e ) {
+            return new WP_Error( 'api_error', $e->getMessage(), array( 'status' => 500 ) );
+        }
+    }
 
 	/**
 	 * Upload file to Google Drive.

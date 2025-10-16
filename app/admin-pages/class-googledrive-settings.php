@@ -161,13 +161,31 @@ class Google_Drive extends Base {
 	 * Checks if user is authenticated with Google Drive.
 	 *
 	 * @return bool
-	 */
-	private function get_auth_status() {
-		$access_token = get_option( 'wpmudev_drive_access_token', '' );
-		$expires_at   = get_option( 'wpmudev_drive_token_expires', 0 );
+	//  */
+	// private function get_auth_status() {
+	// 	$access_token = get_option( 'wpmudev_drive_access_token', '' );
+	// 	$expires_at   = get_option( 'wpmudev_drive_token_expires', 0 );
 		
-		return ! empty( $access_token ) && time() < $expires_at;
+	// 	return ! empty( $access_token ) && time() < $expires_at;
+	// }
+	private function get_auth_status() {
+	$token_data = get_option( 'wpmudev_drive_access_token', array() );
+
+	if ( empty( $token_data['access_token'] ) ) {
+		return false;
 	}
+
+	// If expiration info is saved in token array, check that instead of separate option
+	if ( isset( $token_data['expires_in'] ) && isset( $token_data['created'] ) ) {
+		$expires_at = $token_data['created'] + $token_data['expires_in'];
+		return time() < $expires_at;
+	}
+
+	// fallback check (old style)
+	$expires_at = get_option( 'wpmudev_drive_token_expires', 0 );
+	return time() < (int) $expires_at;
+}
+
 
 	/**
 	 * Gets assets data for given key.

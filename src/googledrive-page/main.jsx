@@ -39,11 +39,28 @@ const WPMUDEV_DriveTest = () => {
   useEffect(() => {
     if (isAuthenticated) {
       setShowCredentials(false);
-      showNotice("Google Drive successfully connected.");
       loadFiles();
     }
     // eslint-disable-next-line
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    // Check if redirected after successful auth
+    if (window.location.search.includes("auth=success")) {
+      setIsAuthenticated(true);
+      showNotice("Google Drive authenticated successfully!");
+      loadFiles();
+
+      // Clean the URL (remove ?auth=success)
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    // If token is already valid in localized data, mark as authenticated
+    else if (window.wpmudevDriveTest.authStatus === true) {
+      setIsAuthenticated(true);
+      showNotice("Google Drive session restored successfully!");
+      loadFiles();
+    }
+  }, []);
 
   const showNotice = (message, type = "success") => {
     setNotice({ message, type });
@@ -225,6 +242,15 @@ const WPMUDEV_DriveTest = () => {
   const folderOptions = files.filter(
     (f) => f.mimeType === "application/vnd.google-apps.folder"
   );
+
+  if (typeof isAuthenticated === "undefined") {
+    return (
+      <div className="drive-loading">
+        <Spinner />
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
 
   return (
     <>

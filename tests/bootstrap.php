@@ -5,11 +5,8 @@
  * @package Wpmudev_Plugin_Test
  */
 
-$_tests_dir = getenv( 'WP_TESTS_DIR' );
+require_once '/home/lynx/Local Sites/h2lab/app/public/wp-load.php';
 
-if ( ! $_tests_dir ) {
-	$_tests_dir = rtrim( sys_get_temp_dir(), '/\\' ) . '/wordpress-tests-lib';
-}
 
 // Forward custom PHPUnit Polyfills configuration to PHPUnit bootstrap file.
 $_phpunit_polyfills_path = getenv( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' );

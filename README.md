@@ -38,9 +38,9 @@ composer install
 vendor/bin/phpunit --bootstrap=tests/bootstrap.php tests/test-googledrive.php
 ```
 
-# Development & Build Tasks
+## Development & Build Tasks
 
-## Composer
+### Composer
 
 Install composer packages:
 
@@ -48,7 +48,7 @@ Install composer packages:
 composer install
 ```
 
-## NPM
+### NPM
 
 Install npm packages:
 
@@ -67,3 +67,78 @@ Commands
 | npm run build   | Build production-ready bundle inside /build/ folder |
 
 ```
+
+All functional requirements have been implemented:
+
+- Google Drive admin page
+
+- OAuth authentication
+
+- File upload, listing, folder creation
+
+- Posts Maintenance page
+
+- WP-CLI command
+
+- REST endpoints
+
+- Unit tests are included in tests/. Update wp-load.php path if needed.
+
+- Plugin can be installed in any WordPress environment for testing.
+
+## WP-CLI Integration – Posts Maintenance
+
+### Overview
+
+A custom WP-CLI command `wp wpmudev:scan posts` has been implemented to execute the same post scanning logic as the **Posts Maintenance** admin interface.  
+This allows developers or site administrators to trigger post maintenance directly from the command line, with progress indicators and support for post type filtering.
+
+---
+
+### Implementation Details
+
+#### 📄 File:
+
+`app/cli/class-posts-maintenance-cli.php`
+
+#### 🧩 Namespace:
+
+`WPMUDEV\PluginTest\App\CLI`
+
+# Scan all published posts
+
+```
+wp wpmudev:scan posts
+```
+
+# Scan only pages
+
+```
+wp wpmudev:scan posts --post_type=page
+```
+
+# Scan a custom post type (e.g., product)
+
+```
+wp wpmudev:scan posts --post_type=product
+```
+
+### Output Example
+
+```
+wp wpmudev:scan posts --post_type=page
+
+Scanning posts for types: page
+Success: Scanned 1 page posts.
+Success: All scans completed successfully!
+```
+
+## Notes
+
+- The command uses the same logic as the Posts Maintenance admin interface.
+
+- It safely updates the wpmudev_test_last_scan meta for each processed post.
+
+- Supports flexible post type filtering via the --post_type argument.
+
+- Built with proper error handling and progress indicators for large datasets.

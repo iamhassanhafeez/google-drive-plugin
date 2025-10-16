@@ -708,6 +708,8 @@ return array(
     'TheSeer\\Tokenizer\\XMLSerializer' => $vendorDir . '/theseer/tokenizer/src/XMLSerializer.php',
     'WPMUDEV\\PluginTest\\App\\Admin_Pages\\Google_Drive' => $baseDir . '/app/admin-pages/class-googledrive-settings.php',
     'WPMUDEV\\PluginTest\\App\\Admin_Pages\\Posts_Maintenance' => $baseDir . '/app/admin-pages/class-posts-maintenance.php',
+    'WPMUDEV\\PluginTest\\App\\CLI\\Drive_CLI' => $baseDir . '/app/CLI/class-drive-cli.php',
+    'WPMUDEV\\PluginTest\\App\\CLI\\Posts_Maintenance_CLI' => $baseDir . '/app/CLI/class-posts-maintenance-cli.php',
     'WPMUDEV\\PluginTest\\Base' => $baseDir . '/core/class-base.php',
     'WPMUDEV\\PluginTest\\Endpoint' => $baseDir . '/core/class-endpoint.php',
     'WPMUDEV\\PluginTest\\Endpoints\\V1\\Drive_API' => $baseDir . '/app/endpoints/v1/class-googledrive-rest.php',

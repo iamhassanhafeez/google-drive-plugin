@@ -273,6 +273,7 @@ class Drive_API extends Base {
         }
 
         try {
+
             $page_size = intval( $request->get_param( 'page_size' ) ) ?: 20;
             $query     = $request->get_param( 'q' ) ?: 'trashed=false';
 

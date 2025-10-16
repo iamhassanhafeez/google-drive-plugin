@@ -75,7 +75,6 @@ class Google_Drive extends Base {
 	 *
 	 * @return void
 	 * @since 1.0.0
-	 *
 	 */
 	public function init() {
 		$this->page_title     = __( 'Google Drive Test', 'wpmudev-plugin-test' );
@@ -163,28 +162,28 @@ class Google_Drive extends Base {
 	 * @return bool
 	//  */
 	// private function get_auth_status() {
-	// 	$access_token = get_option( 'wpmudev_drive_access_token', '' );
-	// 	$expires_at   = get_option( 'wpmudev_drive_token_expires', 0 );
-		
-	// 	return ! empty( $access_token ) && time() < $expires_at;
+	// $access_token = get_option( 'wpmudev_drive_access_token', '' );
+	// $expires_at   = get_option( 'wpmudev_drive_token_expires', 0 );
+
+	// return ! empty( $access_token ) && time() < $expires_at;
 	// }
 	private function get_auth_status() {
-	$token_data = get_option( 'wpmudev_drive_access_token', array() );
+		$token_data = get_option( 'wpmudev_drive_access_token', array() );
 
-	if ( empty( $token_data['access_token'] ) ) {
-		return false;
+		if ( empty( $token_data['access_token'] ) ) {
+			return false;
+		}
+
+		// If expiration info is saved in token array, check that instead of separate option
+		if ( isset( $token_data['expires_in'] ) && isset( $token_data['created'] ) ) {
+			$expires_at = $token_data['created'] + $token_data['expires_in'];
+			return time() < $expires_at;
+		}
+
+		// fallback check (old style)
+		$expires_at = get_option( 'wpmudev_drive_token_expires', 0 );
+		return time() < (int) $expires_at;
 	}
-
-	// If expiration info is saved in token array, check that instead of separate option
-	if ( isset( $token_data['expires_in'] ) && isset( $token_data['created'] ) ) {
-		$expires_at = $token_data['created'] + $token_data['expires_in'];
-		return time() < $expires_at;
-	}
-
-	// fallback check (old style)
-	$expires_at = get_option( 'wpmudev_drive_token_expires', 0 );
-	return time() < (int) $expires_at;
-}
 
 
 	/**

@@ -62,11 +62,13 @@ class Posts_Maintenance extends Base {
 		echo '<div class="wrap sui-wrap">';
 		echo '<h1>' . esc_html__( 'Posts Maintenance', 'wpmudev-plugin-test' ) . '</h1>';
 
-		$posts = get_posts( array(
-			'numberposts' => 10,
-			'post_type'   => 'post',
-			'post_status' => 'any',
-		) );
+		$posts = get_posts(
+			array(
+				'numberposts' => 10,
+				'post_type'   => 'post',
+				'post_status' => 'any',
+			)
+		);
 
 		if ( empty( $posts ) ) {
 			echo '<p>' . esc_html__( 'No posts found.', 'wpmudev-plugin-test' ) . '</p>';

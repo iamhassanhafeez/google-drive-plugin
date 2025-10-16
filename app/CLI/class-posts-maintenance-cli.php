@@ -36,17 +36,19 @@ class Posts_Maintenance_CLI extends WP_CLI_Command {
 	public function posts( $args, $assoc_args ) {
 		$post_types = isset( $assoc_args['post_type'] )
 			? explode( ',', $assoc_args['post_type'] )
-			: [ 'post', 'page' ];
+			: array( 'post', 'page' );
 
 		WP_CLI::log( 'Scanning posts for types: ' . implode( ', ', $post_types ) );
 
 		foreach ( $post_types as $type ) {
-			$posts = get_posts( [
-				'post_type'      => $type,
-				'post_status'    => 'publish',
-				'posts_per_page' => -1,
-				'fields'         => 'ids',
-			] );
+			$posts = get_posts(
+				array(
+					'post_type'      => $type,
+					'post_status'    => 'publish',
+					'posts_per_page' => -1,
+					'fields'         => 'ids',
+				)
+			);
 
 			if ( empty( $posts ) ) {
 				WP_CLI::log( "No {$type} posts found." );

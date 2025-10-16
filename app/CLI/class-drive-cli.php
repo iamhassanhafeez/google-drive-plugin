@@ -35,15 +35,15 @@ class Drive_CLI extends WP_CLI_Command {
 		try {
 			$endpoint = new Drive_API();
 			$endpoint->init(); // Ensure Google Client is initialized
-			$request = new \WP_REST_Request( 'GET', '/wpmudev/v1/drive/files' );
+			$request  = new \WP_REST_Request( 'GET', '/wpmudev/v1/drive/files' );
 			$response = $endpoint->list_files( $request );
 
 			if ( is_wp_error( $response ) ) {
 				WP_CLI::error( $response->get_error_message() );
 			}
 
-			$data = $response instanceof \WP_REST_Response ? $response->get_data() : $response;
-			$files = $data['files'] ?? [];
+			$data  = $response instanceof \WP_REST_Response ? $response->get_data() : $response;
+			$files = $data['files'] ?? array();
 
 			if ( empty( $files ) ) {
 				WP_CLI::success( 'No files found in Google Drive.' );
@@ -52,16 +52,18 @@ class Drive_CLI extends WP_CLI_Command {
 
 			WP_CLI\Utils\format_items(
 				'table',
-				array_map( function ( $file ) {
-					return [
-						'Name'     => $file['name'] ?? 'Unnamed',
-						'Type'     => $file['mimeType'] ?? 'unknown',
-						'Modified' => $file['modifiedTime'] ?? '',
-					];
-				}, $files ),
-				[ 'Name', 'Type', 'Modified' ]
+				array_map(
+					function ( $file ) {
+						return array(
+							'Name'     => $file['name'] ?? 'Unnamed',
+							'Type'     => $file['mimeType'] ?? 'unknown',
+							'Modified' => $file['modifiedTime'] ?? '',
+						);
+					},
+					$files
+				),
+				array( 'Name', 'Type', 'Modified' )
 			);
-
 
 		} catch ( \Exception $e ) {
 			WP_CLI::error( 'Error fetching Drive files: ' . $e->getMessage() );

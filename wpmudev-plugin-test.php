@@ -73,7 +73,6 @@ class WPMUDEV_PluginTest {
 	 *
 	 * @return WPMUDEV_PluginTest class instance.
 	 * @since 1.0.0
-	 *
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {

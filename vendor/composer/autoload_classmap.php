@@ -78,6 +78,7 @@ return array(
     'PHPCSUtils\\Utils\\UseStatements' => $vendorDir . '/phpcsstandards/phpcsutils/PHPCSUtils/Utils/UseStatements.php',
     'PHPCSUtils\\Utils\\Variables' => $vendorDir . '/phpcsstandards/phpcsutils/PHPCSUtils/Utils/Variables.php',
     'WPMUDEV\\PluginTest\\App\\Admin_Pages\\Google_Drive' => $baseDir . '/app/admin-pages/class-googledrive-settings.php',
+    'WPMUDEV\\PluginTest\\App\\Admin_Pages\\Posts_Maintenance' => $baseDir . '/app/admin-pages/class-posts-maintenance.php',
     'WPMUDEV\\PluginTest\\Base' => $baseDir . '/core/class-base.php',
     'WPMUDEV\\PluginTest\\Endpoint' => $baseDir . '/core/class-endpoint.php',
     'WPMUDEV\\PluginTest\\Endpoints\\V1\\Drive_API' => $baseDir . '/app/endpoints/v1/class-googledrive-rest.php',

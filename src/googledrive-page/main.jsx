@@ -35,6 +35,8 @@ const WPMUDEV_DriveTest = () => {
     clientSecret: "",
   });
 
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
   // Load files when authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -60,6 +62,7 @@ const WPMUDEV_DriveTest = () => {
       showNotice("Google Drive session restored successfully!");
       loadFiles();
     }
+    setIsCheckingAuth(false);
   }, []);
 
   const showNotice = (message, type = "success") => {
@@ -243,11 +246,11 @@ const WPMUDEV_DriveTest = () => {
     (f) => f.mimeType === "application/vnd.google-apps.folder"
   );
 
-  if (typeof isAuthenticated === "undefined") {
+  if (isCheckingAuth) {
     return (
       <div className="drive-loading">
         <Spinner />
-        <p>Checking authentication...</p>
+        <p>Checking Authentication Status</p>
       </div>
     );
   }

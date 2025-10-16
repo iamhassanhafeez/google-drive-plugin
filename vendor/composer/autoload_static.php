@@ -185,6 +185,7 @@ class ComposerStaticInitbc5a1dea8e0b0582b222cb113b9671de
         'PHPCSUtils\\Utils\\UseStatements' => __DIR__ . '/..' . '/phpcsstandards/phpcsutils/PHPCSUtils/Utils/UseStatements.php',
         'PHPCSUtils\\Utils\\Variables' => __DIR__ . '/..' . '/phpcsstandards/phpcsutils/PHPCSUtils/Utils/Variables.php',
         'WPMUDEV\\PluginTest\\App\\Admin_Pages\\Google_Drive' => __DIR__ . '/../..' . '/app/admin-pages/class-googledrive-settings.php',
+        'WPMUDEV\\PluginTest\\App\\Admin_Pages\\Posts_Maintenance' => __DIR__ . '/../..' . '/app/admin-pages/class-posts-maintenance.php',
         'WPMUDEV\\PluginTest\\Base' => __DIR__ . '/../..' . '/core/class-base.php',
         'WPMUDEV\\PluginTest\\Endpoint' => __DIR__ . '/../..' . '/core/class-endpoint.php',
         'WPMUDEV\\PluginTest\\Endpoints\\V1\\Drive_API' => __DIR__ . '/../..' . '/app/endpoints/v1/class-googledrive-rest.php',
